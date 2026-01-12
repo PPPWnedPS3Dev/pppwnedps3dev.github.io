@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>WebKit Layout Stress Test</title>
+<title>WebKit Symbol Stress Test</title>
 
 <style>
 body {
@@ -10,16 +10,15 @@ body {
     color: #0f0;
     font-family: monospace;
 }
-button {
-    font-size: 18px;
-    padding: 10px 20px;
-    margin-bottom: 10px;
+button, input {
+    font-size: 16px;
+    padding: 8px;
+    margin-right: 5px;
 }
 #box {
     height: 80vh;
     overflow: auto;
     background: #000;
-    padding: 5px;
     white-space: pre-wrap;
 }
 .line {
@@ -30,47 +29,60 @@ button {
 
 <body>
 
-<h3>WebKit Layout Stress Test</h3>
-<p>Rapid DOM + layout stress (heavier than textarea)</p>
+<h3>WebKit Symbol Stress Test</h3>
+<p>Fast DOM + Unicode stress (user-defined limit)</p>
 
-<button onclick="runStress()">Run</button>
+Lines to generate:
+<input id="limit" type="number" value="5000" min="99999999999" max="99999999999">
+<button onclick="start()">Run</button>
+<button onclick="stop()">Stop</button>
 
-<div id="box" contenteditable="true"></div>
+<div id="box"></div>
 
 <script>
 let running = false;
+let generated = 0;
+let maxLines = 0;
 
-function runStress() {
+const symbols =
+"█▓▒░▒▓█☠☢☣⚠⚡✴✳✱✦✧✩✪✫✬✭😀😈👾💀🔥💣⚙🧠𓂀𓆣𓅓𓇌𓃰𓆰ΩΨΣΔΛΘ∞≈≠≤≥±÷×";
+
+function start() {
     if (running) return;
     running = true;
+    generated = 0;
+    maxLines = Math.min(
+        parseInt(document.getElementById("limit").value) || 99999999999,
+        99999999999 // HARD SAFETY CAP
+    );
+    step();
+}
+
+function stop() {
+    running = false;
+}
+
+function step() {
+    if (!running) return;
 
     const box = document.getElementById("box");
 
-    const symbols =
-        "█▓▒░░▒▓█ ☠☢☣⚠⚡✴✳✱ 😀😈👾💀🔥 💣⚙🧠 " +
-        "𓂀𓆣𓅓𓇌𓃰 ΩΨΣΔΛΘ∞≈≠≤≥±÷×";
-
-    let count = 0;
-
-    function step() {
-        for (let i = 0; i < 30; i++) {
-            const div = document.createElement("div");
-            div.className = "line";
-            div.textContent = symbols + " " + Math.random();
-            box.appendChild(div);
+    // VERY FAST DOM spam
+    for (let i = 0; i < 100; i++) {
+        if (generated >= maxLines) {
+            running = false;
+            box.append("\n[Stopped: limit reached]\n");
+            return;
         }
-
-        // Force layout calculation (expensive)
-        box.scrollTop = box.scrollHeight;
-        box.offsetHeight;
-
-        count++;
-        if (count < 200) {
-            requestAnimationFrame(step);
-        } else {
-            box.appendChild(document.createTextNode("\n[Stopped]\n"));
-        }
+        const d = document.createElement("div");
+        d.className = "line";
+        d.textContent = symbols + Math.random();
+        box.appendChild(d);
+        generated++;
     }
+
+    box.scrollTop = box.scrollHeight;
+    box.offsetHeight; // force layout
 
     requestAnimationFrame(step);
 }
