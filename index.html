@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>WebKit Rapid Symbol Stress Test</title>
+<title>WebKit Layout Stress Test</title>
 
 <style>
 body {
@@ -15,63 +15,64 @@ button {
     padding: 10px 20px;
     margin-bottom: 10px;
 }
-textarea {
-    width: 100%;
+#box {
     height: 80vh;
+    overflow: auto;
     background: #000;
-    color: #0f0;
-    font-size: 14px;
+    padding: 5px;
     white-space: pre-wrap;
+}
+.line {
+    font-size: 14px;
 }
 </style>
 </head>
 
 <body>
 
-<h3>WebKit Symbol Stress Test (Rapid)</h3>
-<p>Rapidly injects large amounts of symbols to stress rendering.</p>
+<h3>WebKit Layout Stress Test</h3>
+<p>Rapid DOM + layout stress (heavier than textarea)</p>
 
 <button onclick="runStress()">Run</button>
 
-<textarea id="output"></textarea>
+<div id="box" contenteditable="true"></div>
 
 <script>
-let stressTimer = null;
+let running = false;
 
 function runStress() {
-    const box = document.getElementById("output");
-    box.value = "Starting rapid symbol injection...\n";
+    if (running) return;
+    running = true;
+
+    const box = document.getElementById("box");
 
     const symbols =
-        "█▓▒░░▒▓█" +
-        "☠☢☣⚠⚡✴✳✱✦✧✩✪✫✬✭✮✯" +
-        "😀😈👾💀🔥💣⚙🧠" +
-        "𓂀𓆣𓅓𓇌𓃰𓆰𓇼" +
-        "ΩΨΣΔΛΘ∞≈≠≤≥±÷×" +
-        "@#$%^&*()[]{}<>|\\/!?";
+        "█▓▒░░▒▓█ ☠☢☣⚠⚡✴✳✱ 😀😈👾💀🔥 💣⚙🧠 " +
+        "𓂀𓆣𓅓𓇌𓃰 ΩΨΣΔΛΘ∞≈≠≤≥±÷×";
 
-    let counter = 0;
+    let count = 0;
 
-    // Clear any previous run
-    if (stressTimer) {
-        clearInterval(stressTimer);
+    function step() {
+        for (let i = 0; i < 30; i++) {
+            const div = document.createElement("div");
+            div.className = "line";
+            div.textContent = symbols + " " + Math.random();
+            box.appendChild(div);
+        }
+
+        // Force layout calculation (expensive)
+        box.scrollTop = box.scrollHeight;
+        box.offsetHeight;
+
+        count++;
+        if (count < 200) {
+            requestAnimationFrame(step);
+        } else {
+            box.appendChild(document.createTextNode("\n[Stopped]\n"));
+        }
     }
 
-    // Add symbols VERY quickly
-    stressTimer = setInterval(() => {
-        for (let i = 0; i < 50; i++) {
-            box.value += symbols + "\n";
-        }
-
-        box.scrollTop = box.scrollHeight;
-        counter++;
-
-        // Safety stop after enough iterations
-        if (counter > 300) {
-            clearInterval(stressTimer);
-            box.value += "\n[Stopped automatically]\n";
-        }
-    }, 5); // extremely fast interval
+    requestAnimationFrame(step);
 }
 </script>
 
